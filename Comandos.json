@@ -1,0 +1,11 @@
+[
+    {
+        "data": {
+            "name": "NAME_COMMAND",
+            "description": "DESCRIPTION_COMMAND"
+        },
+        "execute": "MESSAGE_RESPONSE",
+        "execute2": "MESSAGE_REPLY"
+    },
+    
+]
