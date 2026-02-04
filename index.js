@@ -12,26 +12,25 @@ const comandosJson = require("./Comandos.json");
 
 
 client.once("ready", () => {
-    console.log(`RuralHub Bot foi iniciado em ${client.guilds.cache.size} servidores.`); // Exibir informações de servidores/
+    console.log(`RuralHub Bot foi iniciado em ${client.guilds.cache.size} servidores.`);
     client.user.setActivity(`Conheça a https://ruralhub.com.br/`);
 });
 client.login(config.token);
 
 
-// Configurar os comandos do bot
-client.commands = new Discord.Collection(); //Criando uma nova colenção que ira armazenar os comandos finais
+client.commands = new Discord.Collection(); 
 
-comandosJson.forEach(comando => { //forEach vai navegar por dentro de cada objeto do array do json
-    const { data, execute, execute2, execute3, execute4 } = comando; //Desestruturar o objeto
+comandosJson.forEach(comando => {
+    const { data, execute, execute2, execute3, execute4 } = comando; 
 
-    if (data && data.name && data.description && execute) { //Garantir que o comando tenha os parâmetros necessarios
+    if (data && data.name && data.description && execute) {
 
-        const commandObject = { data }; //Criando um objeto com a propriedade data
-        commandObject.execute = async (interaction) => { //Adicionando o execute e demais no objeto junto a suas estruturas de interação
+        const commandObject = { data };
+        commandObject.execute = async (interaction) => { 
 
-            await interaction.reply(execute); //Extrutura de interação para o execute
+            await interaction.reply(execute);
 
-            if (execute2) { //Se tiver o execute2 - interagir com followUp
+            if (execute2) {
                 await interaction.followUp(execute2);
             }
             if (execute3) {
@@ -42,17 +41,16 @@ comandosJson.forEach(comando => { //forEach vai navegar por dentro de cada objet
             }
         };
 
-        client.commands.set(data.name, commandObject); //Adicionar os comandos a collection
+        client.commands.set(data.name, commandObject); 
     } else {
-        console.log(`Comando inválido: ${JSON.stringify(comando)}`); //Converte o objeto em string para exibir algum comando que não tenha os parâmetros data e execute
+        console.log(`Comando inválido: ${JSON.stringify(comando)}`); 
     }
 });
 
-// Listener para interações
 client.on("interactionCreate", async interaction => {
-    if (!interaction.isChatInputCommand()) return; //Se não for uma interação de chat de comando ignore
+    if (!interaction.isChatInputCommand()) return;
 
-    const command = client.commands.get(interaction.commandName); //command assume os comandos da lista do collection
+    const command = client.commands.get(interaction.commandName); 
     if (!command) {
         interaction.reply({
             content: `Comando não encontrado: ${command}`,
@@ -62,7 +60,6 @@ client.on("interactionCreate", async interaction => {
     }
 
     try {
-        // Executar o comando
         await command.execute(interaction);
     } catch (error) {
         console.error(error);
@@ -73,17 +70,16 @@ client.on("interactionCreate", async interaction => {
     }
 });
 
-//Requerimento do evento de entrada e saida de membros do servidor.
 require("./Eventos/EntradaSaida_Membros")(client);
 
 client.on("messageCreate", async message => {
     const args = message.content.trim().split(/ +/g);
     const comando = args.shift().toLowerCase();
 
-    if(message.author.id == 1194754849733103717) {
+    if(message.author.id == //#) {
         return;
     }
-    if(comando === "avatar") { //Enviar a imagem do avatar
+    if(comando === "avatar") {
         message.channel.send(`https://cdn.discordapp.com/avatars/565974725797609514/${message.author.avatar}.webp?size=256`);
         return;
     }
@@ -104,7 +100,6 @@ client.on("messageCreate", async message => {
     if(message.guild.id == //#) {
 
         if(message.channel.id == //#) {
-            // Integração N8N - Bot Suporte
             fetch("https://URL_AI_AGENTE_INTEGRATION", {
                     method: "POST",
                     headers: { 
@@ -114,21 +109,17 @@ client.on("messageCreate", async message => {
                 body: JSON.stringify({
                     data: message.content,
                     sessionId: message.author.id
-                    //,guildId: message.guild.id,
-                    //channelId: message.channel.id,
-                    //authorUsername: message.author.username
                 })
             })
             .then(response => {
                 if (!response.ok) {
-                    console.log(`Erro ${response.code}: ${response.message}`); // Log detalhada com o res da API
-                    throw new Error(`Erro ${response.code}: ${response.message}`); // Captura o erro e envia para o catch
+                    console.log(`Erro ${response.code}: ${response.message}`);
+                    throw new Error(`Erro ${response.code}: ${response.message}`);
                 }
                 return;
             })
         }
         else if(message.channel.id == //#) {
-            // Integração N8N - Marketing
             fetch("https://URL_AI_AGENTE_INTEGRATION", {
                     method: "POST",
                     headers: { 
@@ -138,15 +129,12 @@ client.on("messageCreate", async message => {
                 body: JSON.stringify({
                     data: message.content,
                     sessionId: message.author.id
-                    //,guildId: message.guild.id,
-                    //channelId: message.channel.id,
-                    //authorUsername: message.author.username
                 })
             })
             .then(response => {
                 if (!response.ok) {
-                    console.log(`Erro ${response.code}: ${response.message}`); // Log detalhada com o res da API
-                    throw new Error(`Erro ${response.code}: ${response.message}`); // Captura o erro e envia para o catch
+                    console.log(`Erro ${response.code}: ${response.message}`); 
+                    throw new Error(`Erro ${response.code}: ${response.message}`);
                 }
                 return;
             })
@@ -154,4 +142,5 @@ client.on("messageCreate", async message => {
         return;
     }
 })
+
 // Pra executar só usar o comando: node index.js
