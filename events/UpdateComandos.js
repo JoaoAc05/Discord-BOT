@@ -1,9 +1,9 @@
-const config = require("./config.json");
-const comandosJson = require("./Comandos.json");
+require('dotenv').config();
+const comandosJson = require("../Comandos.json");
 const { REST, Routes } = require("discord.js");
 
 // Instância REST
-const rest = new REST({ version: "10" }).setToken(config.token);
+const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
 
 // Função de Deploy => Sincroniza a lista de comandos no Discord
 (async () => {
@@ -18,7 +18,7 @@ const rest = new REST({ version: "10" }).setToken(config.token);
 
         // Enviar os comandos para o Discord
         const data = await rest.put(
-            Routes.applicationCommands(config.client_id),
+            Routes.applicationCommands(process.env.CLIENT_ID),
             { body: commands }
         );
 

@@ -1,56 +1,44 @@
-const Discord = require("discord.js");
-const client = new Discord.Client({
-    intents: [
-      Discord.GatewayIntentBits.Guilds,
-      Discord.GatewayIntentBits.GuildMessages,
-      Discord.GatewayIntentBits.MessageContent,
-      Discord.GatewayIntentBits.GuildMembers,
-    ],
-});
-const config = require("./config.json");
+const { Client, Collection } = require('discord.js');
+
+require('dotenv').config();
+const discordConfig = require('./config/discord.config');
 const comandosJson = require("./Comandos.json");
 
+const client = new Client(discordConfig.client);
 
 client.once("ready", () => {
-    console.log(`RuralHub Bot foi iniciado em ${client.guilds.cache.size} servidores.`);
-    client.user.setActivity(`Conheça a https://ruralhub.com.br/`);
+    console.log(`Discord-Bot foi iniciado em ${client.guilds.cache.size} servidores.`);
+    client.user.setPresence(discordConfig.presence);
 });
-client.login(config.token);
 
-
-client.commands = new Discord.Collection(); 
+client.commands = new Collection();
+client.login(process.env.DISCORD_TOKEN);
 
 comandosJson.forEach(comando => {
-    const { data, execute, execute2, execute3, execute4 } = comando; 
+    const { data, execute, execute2, execute3, execute4 } = comando;
 
     if (data && data.name && data.description && execute) {
 
         const commandObject = { data };
-        commandObject.execute = async (interaction) => { 
+        commandObject.execute = async (interaction) => {
 
             await interaction.reply(execute);
 
-            if (execute2) {
-                await interaction.followUp(execute2);
-            }
-            if (execute3) {
-                await interaction.followUp(execute3);
-            }
-            if (execute4) {
-                await interaction.followUp(execute4);
-            }
+            if (execute2) await interaction.followUp(execute2);
+            if (execute3) await interaction.followUp(execute3);
+            if (execute4) await interaction.followUp(execute4);
         };
 
-        client.commands.set(data.name, commandObject); 
+        client.commands.set(data.name, commandObject);
     } else {
-        console.log(`Comando inválido: ${JSON.stringify(comando)}`); 
+        console.log(`Comando inválido: ${JSON.stringify(comando)}`);
     }
 });
 
 client.on("interactionCreate", async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    const command = client.commands.get(interaction.commandName); 
+    const command = client.commands.get(interaction.commandName);
     if (!command) {
         interaction.reply({
             content: `Comando não encontrado: ${command}`,
@@ -70,20 +58,22 @@ client.on("interactionCreate", async interaction => {
     }
 });
 
-require("./Eventos/EntradaSaida_Membros")(client);
+require("./events/EntradaSaida_Membros")(client);
+const { sendMessageToN8n } = require("./services/n8n.service");
 
 client.on("messageCreate", async message => {
+    if (message.author.bot) return;
+
     const args = message.content.trim().split(/ +/g);
     const comando = args.shift().toLowerCase();
 
-    if(message.author.id == //#) {
+    if (comando === "avatar") {
+        message.channel.send(
+            message.author.displayAvatarURL({ extension: "webp", size: 256 })
+        );
         return;
     }
-    if(comando === "avatar") {
-        message.channel.send(`https://cdn.discordapp.com/avatars/565974725797609514/${message.author.avatar}.webp?size=256`);
-        return;
-    }
-    if(comando === "ping") {
+    if (comando === "ping") {
         try {
             const m = await message.channel.send("Pong!");
             m.edit(`Latencia do bot é: ${m.createdTimestamp - message.createdTimestamp}ms`);
@@ -95,52 +85,21 @@ client.on("messageCreate", async message => {
             })
         }
         return;
-    }   
+    }
 
-    if(message.guild.id == //#) {
+    const success = await sendMessageToN8n({
+        guildId: message.guild?.id,
+        channelId: message.channel.id,
+        message: message.content,
+        sessionId: message.author.id,
+        author: message.member.displayName
+    });
 
-        if(message.channel.id == //#) {
-            fetch("https://URL_AI_AGENTE_INTEGRATION", {
-                    method: "POST",
-                    headers: { 
-                        "Content-Type": "application/json",  
-                        Authorization: "#Suporte.9015brasil#"
-                },
-                body: JSON.stringify({
-                    data: message.content,
-                    sessionId: message.author.id
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    console.log(`Erro ${response.code}: ${response.message}`);
-                    throw new Error(`Erro ${response.code}: ${response.message}`);
-                }
-                return;
-            })
-        }
-        else if(message.channel.id == //#) {
-            fetch("https://URL_AI_AGENTE_INTEGRATION", {
-                    method: "POST",
-                    headers: { 
-                        "Content-Type": "application/json",  
-                        Authorization: "#Marketing.9015brasil#"
-                },
-                body: JSON.stringify({
-                    data: message.content,
-                    sessionId: message.author.id
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    console.log(`Erro ${response.code}: ${response.message}`); 
-                    throw new Error(`Erro ${response.code}: ${response.message}`);
-                }
-                return;
-            })
-        }
+    if (!success) {
+        console.log(`Mensagem ignorada.`);
         return;
     }
+
 })
 
 // Pra executar só usar o comando: node index.js

@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-Este projeto consiste em um **bot para Discord desenvolvido em JavaScript (Node.js)** utilizando a biblioteca **discord.js**. Inicialmente, o bot foi criado para interações via **Slash Commands (/)**, mas posteriormente evoluiu para integrar-se com o **n8n**, permitindo o envio de mensagens para agentes de IA e o recebimento de respostas automatizadas.
+Este projeto consiste em um **bot para Discord desenvolvido em JavaScript (Node.js)** utilizando a biblioteca **discord.js**. Inicialmente, o BOT foi criado para interações via **Slash Commands (/)**, mas posteriormente evoluiu para integrar-se com o **n8n**, permitindo o envio de mensagens para agentes de IA e o recebimento de respostas automatizadas.
 
 O bot é utilizado como apoio a fluxos internos (ex.: suporte e marketing), além de oferecer comandos utilitários básicos dentro do servidor Discord.
 
@@ -22,12 +22,17 @@ O bot é utilizado como apoio a fluxos internos (ex.: suporte e marketing), alé
 
 ```
 /
-├─ index.js                    # Arquivo principal, inicialização e orquestração do bot
-├─ config.json                 # Dados sensíveis (token, configs privadas)
+├─ index.js                    # Arquivo principal, inicialização e orquestração do BOT
 ├─ Comandos.json               # Definição dos Slash Commands
+├─ .env                        # Dados sensíveis (token, configs privadas)
 ├─ UpdateComandos.js           # Script para registrar/atualizar comandos no Discord
 ├─ DeleteComando.js            # Script para remover um comando específico
 ├─ DeleteTodosComandos.js      # Script para remover todos os comandos registrados
+├─ config/
+│  ├─ discord.config.js        # Configurações e permissões do BOT
+│  └─ n8n.config.js            # Gerenciamento da Guild e Channel que pode enviar as mensagens ao n8n
+├─ services/
+│  └─ n8n.service.js           # Reponsavel por receber as mensagens e enviar ao n8n conforme n8n.confg.js
 └─ Eventos/
    └─ EntradaSaida_Membros.js  # Evento de entrada e saída de membros
 ```
