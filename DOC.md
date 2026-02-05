@@ -12,9 +12,10 @@ O bot é utilizado como apoio a fluxos internos (ex.: suporte e marketing), alé
 
 * **Node.js**
 * **discord.js** (Gateway Intents, Slash Commands, Events)
-* **JSON** (configuração e definição de comandos)
 * **n8n** (integração via Webhooks)
 * **Fetch API** (envio de mensagens HTTP)
+* **dotenv** (variáveis de ambiente)
+* **JSON** (configuração e definição de comandos)
 
 ---
 
@@ -22,185 +23,84 @@ O bot é utilizado como apoio a fluxos internos (ex.: suporte e marketing), alé
 
 ```
 /
-├─ index.js                    # Arquivo principal, inicialização e orquestração do BOT
-├─ Comandos.json               # Definição dos Slash Commands
-├─ .env                        # Dados sensíveis (token, configs privadas)
-├─ UpdateComandos.js           # Script para registrar/atualizar comandos no Discord
-├─ DeleteComando.js            # Script para remover um comando específico
-├─ DeleteTodosComandos.js      # Script para remover todos os comandos registrados
+├─ index.js                     # Bootstrap e orquestração do BOT
+├─ Comandos.json                # Definição dos Slash Commands
+├─ .env                         # Variáveis de ambiente (tokens, IDs, webhooks)
+│
 ├─ config/
-│  ├─ discord.config.js        # Configurações e permissões do BOT
-│  └─ n8n.config.js            # Gerenciamento da Guild e Channel que pode enviar as mensagens ao n8n
+│  ├─ discord.config.js         # Configuração do client Discord (intents, presence)
+│  └─ n8n.config.js             # Mapeamento de guilds/canais autorizados para o n8n
+│
 ├─ services/
-│  └─ n8n.service.js           # Reponsavel por receber as mensagens e enviar ao n8n conforme n8n.confg.js
+│  └─ n8n.service.js            # Centralização do envio de mensagens ao n8n
+│
 └─ Eventos/
-   └─ EntradaSaida_Membros.js  # Evento de entrada e saída de membros
+   ├─ interactionCreate.events.js      # Execução de Slash Commands
+   ├─ messageCreate.events.js          # Comandos por texto + integração n8n
+   ├─ guildAddRemove.events.js         # Evento de entrada e saída de membros
+   ├─ UpdateComandos.commands.js       # Registro/atualização de Slash Commands
+   ├─ delete.commands.js               # Remoção de um comando específico
+   └─ allDelete.commands.js            # Remoção de todos os comandos
+
 ```
 
 ---
 
-## Arquitetura e Funcionamento do BOT
+## Arquitetura Geral
 <details>
 <summary>
   Ver mais...
 </summary>
 
-## Arquivo `index.js`
+O projeto segue o princípio de separação de responsabilidades:
 
-O `index.js` é o **ponto de entrada do projeto**. Ele é responsável por:
+| Camada      | Responsabilidade             |
+| ----------- | ---------------------------- |
+| `index.js`  | Inicialização do bot         |
+| `config/`   | Configurações declarativas   |
+| `Eventos/`  | Eventos do Discord           |
+| `services/` | Regras de integração externa |
 
-* Inicializar o cliente do Discord
-* Configurar intents
-* Carregar comandos
-* Registrar listeners de interações, mensagens e eventos
-* Integrar com o n8n via Webhooks
 
-### 1. Inicialização do Cliente
+## Configuração do Discord (discord.config.js)
 
-O bot cria uma instância do `Discord.Client` com os intents necessários:
+Define como o bot se conecta ao Discord:
+* Gateway Intents
+* Partials
+* Presence (status/atividade)
 
-* `Guilds`
-* `GuildMessages`
-* `MessageContent`
-* `GuildMembers`
+Exemplo de responsabilidades:
+* Quais eventos o bot escuta
+* Qual status aparece no Discord
 
-Esses intents permitem que o bot:
+## Configuração do n8n (n8n.config.js)
 
-* Leia mensagens
-* Responda comandos
-* Detecte entrada e saída de membros
+Responsável por definir quais guilds e canais podem enviar mensagens ao n8n.
 
----
+Características:
+* Mapeamento por guildId → channelId
+* Cada canal define:
+* Nome lógico
+* Webhook URL
+* Authorization
 
-### 2. Autenticação
+Todos os valores sensíveis vêm do **.env**.
 
-O token do bot é carregado a partir do arquivo `config.json`:
+## Integração com n8n (n8n.service.js)
 
-```json
-{
-  "token": "SEU_TOKEN_AQUI"
-}
+Características principais:
+* Webhook assíncrono
+* Não bloqueia o bot
+* Retorna sucesso baseado no contexto válido, não na resposta do n8n
+
+Payload enviado:
 ```
-
----
-
-### 3. Evento `ready`
-
-Executado quando o bot conecta com sucesso ao Discord.
-
-Funções executadas:
-
-* Loga a quantidade de servidores conectados
-* Define o status/atividade do bot
-
----
-
-### 4. Sistema de Slash Commands
-
-Os comandos são definidos no arquivo `Comandos.json` e carregados dinamicamente.
-
-Fluxo:
-
-1. O arquivo JSON é lido
-2. Cada comando é validado
-3. Os comandos válido
-4. Cada comando possui:
-   - `data` (nome e descrição)
-   - `execute` (resposta principal)
-   - `execute2`, `execute3`, `execute4` (respostas adicionais via `followUp`)
-
-Esse modelo permite **respostas encadeadas** sem duplicar lógica.
-
----
-
-### 5. Listener `interactionCreate`
-
-Responsável por capturar **Slash Commands (/)**.
-
-Fluxo:
-
-1. Verifica se a interação é um comando de chat
-2. Busca o comando na collection
-3. Executa o método `execute`
-4. Trata erros de forma segura (resposta ephemeral)
-
----
-
-### 6. Eventos de Entrada e Saída de Membros
-
-O arquivo `Eventos/EntradaSaida_Membros.js` é importado e recebe o `client` como parâmetro.
-
-Responsabilidades:
-- Monitorar quando um membro entra ou sai do servidor
-- Disparar mensagens automáticas (ex.: boas-vindas ou alertas)
-
-Esse padrão mantém o código **modular e organizado**.
-
----
-
-### 7. Listener `messageCreate`
-
-Este listener trata **mensagens comuns**, fora do contexto de Slash Commands.
-
-Funcionalidades implementadas:
-
-#### a) Filtro de mensagens do próprio bot
-
-Evita loops ignorando mensagens enviadas pelo próprio bot.
-
-#### b) Comandos simples por texto
-
-- `ping`: retorna a latência do bot
-- `avatar`: retorna a URL do avatar do usuário
-
-Esses comandos funcionam sem `/` e são úteis para testes rápidos.
-
----
-
-### 8. Integração com n8n
-
-A integração com o **n8n** ocorre apenas em:
-
-- Um servidor específico (`guild.id`)
-- Canais específicos (`channel.id`)
-
-Atualmente existem dois fluxos:
-
-#### a) Suporte
-
-- Canal dedicado a suporte
-- Envia mensagens para um webhook n8n
-- Usa `sessionId` baseado no ID do usuário
-
-#### b) Marketing
-
-- Canal dedicado a marketing
-- Webhook separado
-- Mantém sessões independentes
-
-Formato do payload enviado:
-
-```json
 {
   "data": "mensagem do usuário",
-  "sessionId": "ID_do_usuario"
+  "sessionId": "ID_do_usuario",
+  "author": "Nome exibido"
 }
 ```
-
-Esse modelo permite que o n8n:
-- Identifique o usuário
-- Mantenha contexto de conversa
-- Encaminhe mensagens para agentes de IA
-
----
-
-## Boas Práticas Adotadas
-
-- Separação de responsabilidades (eventos, comandos, integrações)
-- Uso de `Collection` para gerenciamento de comandos
-- Proteção de dados sensíveis em `config.json`
-- Validação de comandos antes do registro
-- Tratamento básico de erros
 
 </details>
 ---
@@ -210,15 +110,15 @@ Esse modelo permite que o n8n:
 1. Instalar dependências:
 
 ```
-npm install discord.js
+npm install
 ```
 
-2. Configurar o `config.json`
+2. Configurar o `.env`
 
 3. Registrar os comandos Slash:
 
 ```
-node UpdateComandos.js
+node ./events/update.commands.js
 ```
 
 4. Iniciar o bot:
