@@ -23,7 +23,7 @@ O bot é utilizado como apoio a fluxos internos (ex.: suporte e marketing), alé
 
 ```
 /
-├─ index.js                     # Bootstrap e orquestração do BOT
+├─ index.js                     # Inicialização, configuração e carregamento dos módulos do bot
 ├─ Comandos.json                # Definição dos Slash Commands
 ├─ .env                         # Variáveis de ambiente (tokens, IDs, webhooks)
 │
